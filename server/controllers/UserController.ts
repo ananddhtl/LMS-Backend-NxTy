@@ -8,6 +8,8 @@ import ejs from "ejs";
 import path from "path";
 import sendMail from "../utils/sendMail";
 import { sendToken } from "../utils/jwt";
+import { redis } from "../utils/redis";
+import { getUserId } from "../services/user,services";
 interface IRegisterUser {
   name: string;
   email: string;
@@ -147,10 +149,9 @@ export const LoginRequest = CatchAsyncError(
         return next(new ErrorHandler("Sorry ! Invalid email or password", 400));
       }
 
-     
       const isPasswordMatch = await user.comparePassword(password);
       if (!isPasswordMatch) {
-        return next(new ErrorHandler("Sorry ! Ivalid email or password", 400));
+        return next(new ErrorHandler("Sorry ! Invalid email or password", 400));
       }
       sendToken(user, 200, res);
     } catch (error: any) {
@@ -158,3 +159,36 @@ export const LoginRequest = CatchAsyncError(
     }
   }
 );
+
+export const logoutUser = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.cookie("access_token", "", { maxAge: 1 });
+      res.cookie("refresh_token", "", { maxAge: 1 });
+      const userId = req.user?._id || "";
+
+      redis.del(userId);
+      res.status(200).json({ success: true, message: "User has been logout successfully" });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+
+export const retriveUserInfo = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      
+      const userId = req.user?._id ;
+      getUserId(userId, res)
+     
+     
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+
+
