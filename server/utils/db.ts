@@ -1,18 +1,21 @@
 
 require("dotenv").config();
-import mongoose from 'mongoose';
 
-const dbUrl:string = process.env.DB_URL || '';
 
-const connectDB = async () =>{
-    try {
-    await mongoose.connect(dbUrl).then((data:any) =>{
-        console.log(`Database is connected with port ${data.connection.host}`)
-    })
-    }catch (error:any){
-        console.log(error.message);
-        setTimeout(connectDB, 5000);
+const mongoose = require('mongoose');
 
-    }
-}
-export default connectDB;
+const connectDB = async () => {
+  try {
+    const connection = await mongoose.connect(process.env.DB_URL, {
+    //   useNewUrlParser: true,
+    //   useUnifiedTopology: true,
+    });
+    console.log(`MongoDB connected: ${connection.connection.host}`);
+  } catch (error) {
+    console.error(error);
+    process.exit(1);   
+
+  }
+};
+
+module.exports = connectDB;
