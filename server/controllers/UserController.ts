@@ -1,5 +1,5 @@
 import { NextFunction, Response, Request } from "express";
-import userModel ,{IUser} from "../models/user.model";
+import userModel, { IUser } from "../models/user.model";
 import { CatchAsyncError } from "../middleware/catchAsyncError";
 import ErrorHandler from "../utils/ErrorHandler";
 import jwt, { Secret } from "jsonwebtoken";
@@ -7,6 +7,7 @@ require("dotenv").config();
 import ejs from "ejs";
 import path from "path";
 import sendMail from "../utils/sendMail";
+import { sendToken } from "../utils/jwt";
 interface IRegisterUser {
   name: string;
   email: string;
@@ -96,7 +97,8 @@ interface IActivationRequest {
 
 export const activateUser = CatchAsyncError(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { activation_token, activation_code } = req.body as IActivationRequest;
+    const { activation_token, activation_code } =
+      req.body as IActivationRequest;
 
     try {
       const decodedToken = jwt.verify(
@@ -118,7 +120,39 @@ export const activateUser = CatchAsyncError(
 
       await userModel.create({ name, email, password });
 
-      res.status(201).json({ success: true, message: "User activated successfully" });
+      res
+        .status(201)
+        .json({ success: true, message: "User activated successfully" });
+    } catch (error: any) {
+      return next(new ErrorHandler(error.message, 400));
+    }
+  }
+);
+
+interface ILoginRequest {
+  email: string;
+  password: string;
+}
+
+export const LoginRequest = CatchAsyncError(
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const { email, password } = req.body as ILoginRequest;
+      if (!email || !password) {
+        return next(new ErrorHandler("Please input  email and password", 400));
+      }
+
+      const user = await userModel.findOne({ email }).select("+password");
+      if (!user) {
+        return next(new ErrorHandler("Sorry ! Invalid email or password", 400));
+      }
+
+     
+      const isPasswordMatch = await user.comparePassword(password);
+      if (!isPasswordMatch) {
+        return next(new ErrorHandler("Sorry ! Ivalid email or password", 400));
+      }
+      sendToken(user, 200, res);
     } catch (error: any) {
       return next(new ErrorHandler(error.message, 400));
     }
