@@ -81,9 +81,11 @@ export const accessTokenUpdate = CatchAsyncError(
           expiresIn: "3d",
         }
       );
+
+      req.user = user;
       res.cookie("access_token", accessToken, accessTokenOptions);
       res.cookie("refresh_token", refreshToken, refreshtokenOptions);
-      res.status(200).json({ success: 'success', accessToken });
+      res.status(200).json({ success: "success", accessToken });
     } catch (error) {}
   }
 );
